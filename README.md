@@ -77,17 +77,17 @@ cp .env.example .env
 nano .env
 ```
 
-`.env` ichida `NODE_ENV=production`, `PORT=3009`, `SITE_URL=https://your-domain`, `MONGODB_URI` va JWT/QR uchun uchta alohida 32+ belgili secret kiriting; `MOCK_PAYMENTS=false` bo'lsin. `.env` Git'ga kiritilmaydi va CI deploy vaqtida ustidan yozilmaydi.
+`.env` ichida `NODE_ENV=production`, `PORT=3009`, `SITE_URL=https://bases.sstudio.uz`, `MONGODB_URI` va JWT/QR uchun uchta alohida 32+ belgili secret kiriting; `MOCK_PAYMENTS=false` bo'lsin. `.env` Git'ga kiritilmaydi va CI deploy vaqtida ustidan yozilmaydi.
 
 3. Nginx virtual host'ni sozlang:
 
 ```bash
-sed 's/example.com/your-domain.uz/g' deploy/busticket.nginx.conf > /etc/nginx/sites-available/busticket
+cp deploy/busticket.nginx.conf /etc/nginx/sites-available/busticket
 ln -s /etc/nginx/sites-available/busticket /etc/nginx/sites-enabled/busticket
 nginx -t && systemctl reload nginx
 ```
 
-Certbot bilan HTTPS yoqing: `certbot --nginx -d your-domain.uz -d www.your-domain.uz`.
+Certbot bilan HTTPS yoqing: `certbot --nginx -d bases.sstudio.uz`.
 
 4. Birinchi deploy'ni bajaring:
 
@@ -113,6 +113,8 @@ Repo `Settings → Secrets and variables → Actions` bo'limida quyidagi **Repos
 - `SERVER_USER`: `/root/buses` uchun huquqi bor SSH foydalanuvchi (shu joylashuvda `root`).
 - `SERVER_PORT`: SSH porti (odatda `22`; bu ilovaning `3009` porti emas).
 - `SSH_KNOWN_HOSTS` (ixtiyoriy, tavsiya etiladi): server host key fingerprint'i; bo'sh bo'lsa runner `ssh-keyscan` ishlatadi.
+
+Secrets kiritilmaguncha workflow test/lint/build'ni bajaradi va VPS deploy bosqichini ogohlantirish bilan o'tkazib yuboradi.
 
 `.github/workflows/deploy.yml` `main` branch'ga push bo'lganda CI/CD'ni avtomatik ishga tushiradi. Deploy xatosi bo'lsa, GitHub Actions loglari va serverdagi `pm2 logs busticket` buyrug'ini tekshiring. Nginx konfiguratsiyasi `deploy/busticket.nginx.conf` faylida.
 

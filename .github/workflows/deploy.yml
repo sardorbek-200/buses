@@ -37,8 +37,25 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Deploy to VPS
+      - name: Check VPS deploy secrets
         if: github.ref == 'refs/heads/main'
+        id: deployment
+        env:
+          SSH_PRIVATE: ${{ secrets.SSH_PRIVATE }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_PORT: ${{ secrets.SERVER_PORT }}
+        shell: bash
+        run: |
+          if [[ -n "$SSH_PRIVATE" && -n "$SSH_HOST" && -n "$SERVER_USER" && -n "$SERVER_PORT" ]]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::VPS deploy skipped; configure SSH_PRIVATE, SSH_HOST, SERVER_USER and SERVER_PORT repository secrets."
+          fi
+
+      - name: Deploy to VPS
+        if: github.ref == 'refs/heads/main' && steps.deployment.outputs.enabled == 'true'
         env:
           SSH_PRIVATE: ${{ secrets.SSH_PRIVATE }}
           SSH_HOST: ${{ secrets.SSH_HOST }}
@@ -48,10 +65,6 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          : "${SSH_PRIVATE:?GitHub secret SSH_PRIVATE is required}"
-          : "${SSH_HOST:?GitHub secret SSH_HOST is required}"
-          : "${SERVER_USER:?GitHub secret SERVER_USER is required}"
-          : "${SERVER_PORT:?GitHub secret SERVER_PORT is required}"
           install -m 700 -d "$HOME/.ssh"
           key_file="$(mktemp)"
           trap 'rm -f "$key_file"' EXIT
