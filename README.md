@@ -66,20 +66,33 @@ Ilova `3009` portida faqat `127.0.0.1` ga bog'lanadi; tashqi trafik Nginx orqali
 
 ### VPS'ni birinchi marta tayyorlash (Ubuntu)
 
-1. Node.js 22, Git, Nginx va PM2 o'rnating. MongoDB Atlas replica set yoki alohida replica set tayyorlang. DNS `A` yozuvini VPS manziliga yo'naltiring; firewall'da faqat SSH, HTTP (80) va HTTPS (443) portlarini ochiq qoldiring.
-2. Repo ochiq bo'lsa, serverda quyidagilarni bajaring:
+1. DNS `A` yozuvini `bases.sstudio.uz` uchun VPS IP'ga yo'naltiring; firewall'da faqat SSH, HTTP (80) va HTTPS (443) portlarini ochiq qoldiring. MongoDB Atlas replica set yoki alohida replica set tayyorlang.
+2. Ubuntu serverda Node.js 22, Git, Nginx, Certbot va PM2 o'rnating:
 
 ```bash
-mkdir -p /root/buses
-git clone https://github.com/sardorbek-200/buses.git /root/buses
+sudo apt update
+sudo apt install -y ca-certificates curl git nginx certbot python3-certbot-nginx
+curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
+sudo apt install -y nodejs
+sudo npm install -g pm2
+```
+
+3. Repo ochiq bo'lsa, serverda klonlang yoki mavjud checkout'ni yangilang:
+
+```bash
+if [ -d /root/buses/.git ]; then
+  git -C /root/buses pull --ff-only origin main
+else
+  git clone https://github.com/sardorbek-200/buses.git /root/buses
+fi
 cd /root/buses
-cp .env.example .env
+[ -f .env ] || cp .env.example .env
 nano .env
 ```
 
-`.env` ichida `NODE_ENV=production`, `PORT=3009`, `SITE_URL=https://bases.sstudio.uz`, `MONGODB_URI` va JWT/QR uchun uchta alohida 32+ belgili secret kiriting; `MOCK_PAYMENTS=false` bo'lsin. `.env` Git'ga kiritilmaydi va CI deploy vaqtida ustidan yozilmaydi.
+`.env` ichida `NODE_ENV=production`, `PORT=3009`, `SITE_URL=https://bases.sstudio.uz`, `MONGODB_URI` va JWT/QR uchun uchta alohida 32+ belgili secret kiriting (`openssl rand -base64 48` bilan yarating); `MOCK_PAYMENTS=false` bo'lsin. `.env` Git'ga kiritilmaydi va CI deploy vaqtida ustidan yozilmaydi.
 
-3. Nginx virtual host'ni sozlang:
+4. Nginx virtual host'ni sozlang:
 
 ```bash
 cp deploy/busticket.nginx.conf /etc/nginx/sites-available/busticket
@@ -87,9 +100,9 @@ ln -s /etc/nginx/sites-available/busticket /etc/nginx/sites-enabled/busticket
 nginx -t && systemctl reload nginx
 ```
 
-Certbot bilan HTTPS yoqing: `certbot --nginx -d bases.sstudio.uz`.
+Certbot bilan HTTPS yoqing: `sudo certbot --nginx -d bases.sstudio.uz`.
 
-4. Birinchi deploy'ni bajaring:
+5. Birinchi deploy'ni bajaring:
 
 ```bash
 cd /root/buses
